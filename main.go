@@ -176,10 +176,16 @@ func MD5(str string) string {
 // region time
 
 // 获取今天零点的时间
-// 考虑时区偏移的，不考虑秒以下时间
-func ZeroClock() time.Time {
-	today := time.Now()
-	return today.Add(-time.Duration(today.Hour()*3600+today.Minute()*60+today.Second()) * time.Second)
+// 考虑时区偏移的
+//	t 为空时，使用当前时间
+func ZeroClock(t *time.Time) time.Time {
+	if t == nil {
+		temp := time.Now()
+		t = &temp
+	}
+	temp := t.Truncate(time.Hour)
+	t = &temp
+	return t.Add(-time.Duration(t.Hour()) * time.Hour)
 }
 
 // 获取今天零点的时间戳
@@ -253,6 +259,7 @@ func IsUnique[T comparable](arr []T) bool {
 }
 
 // 判断数组中是否包含指定元素
+//
 //	arr: 数组
 //	ele: 要判断的元素
 func InArray[T string | uint](arr []T, ele T) bool {
