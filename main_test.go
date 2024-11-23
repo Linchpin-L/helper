@@ -56,3 +56,33 @@ func TestZeroClock(t *testing.T) {
 		})
 	}
 }
+
+func TestNumToAlphabet(t *testing.T) {
+	type args struct {
+		num int64
+	}
+	tests := []struct {
+		name string
+		args args
+		want []byte
+	}{
+		{"1", args{0}, []byte("0")},
+		{"2", args{-0}, []byte("0")},
+		{"3", args{1}, []byte("1")},
+		{"4", args{-1}, []byte("-1")},
+		{"6", args{10}, []byte("a")},
+		{"7", args{11}, []byte("b")},
+		{"8", args{61}, []byte("1p")},
+		{"9", args{62}, []byte("1q")},
+		{"10", args{-653543}, []byte("-e09z")},
+		{"5", args{9223372036854775807}, []byte("1y2p0ij32e8e7")},
+		{"11", args{-9223372036854775808}, []byte("-1y2p0ij32e8e8")},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NumToAlphabet(tt.args.num); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NumToAlphabet3() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

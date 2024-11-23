@@ -231,12 +231,33 @@ func RandBytes(len int) []byte {
 }
 
 // 将十进制数转换成 36 进制的
-// 1.0.1
-func NumToAlphabet(num int64) string {
-	num_str := ""
-	for ; num != 0; num = num / 36 {
-		num_str = string(numSequence[num%36]) + num_str
+// 仅包含数字和小写字母
+func NumToAlphabet(num int64) []byte {
+	if num == 0 {
+		return []byte("0")
 	}
+
+	num_str := []byte{}
+	ne := false
+	if num < 0 {
+		ne = true
+	}
+	for ; num != 0; num = num / 36 {
+		offset := num%36
+		if ne {
+			offset = -offset
+		}
+		num_str = append(num_str, numSequence[offset])
+	}
+	
+	// 倒置 num_str
+	if ne {
+		num_str = append(num_str, '-')
+	}
+	for i, j := 0, len(num_str)-1; i < j; i, j = i+1, j-1 {
+		num_str[i], num_str[j] = num_str[j], num_str[i]
+	}
+
 	return num_str
 }
 
