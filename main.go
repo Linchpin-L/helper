@@ -495,6 +495,31 @@ func MakeDir(dir string) error {
 	return nil
 }
 
+// 当给定的文件夹不存在时, 创建它
+// 如果给定的路径末尾包含了文件后缀，那么忽略它，只创建之前的路径
+func MakeDirTrimFileName(dir string) error {
+	if dir == "" {
+		return nil
+	}
+
+	i := strings.LastIndex(dir, "/")
+	if i == -1 {
+		i = 0
+	}
+	j := strings.LastIndex(dir[i:], ".") // 在最后一个目录中查找文件后缀。查到则忽略整个区间
+	if j != -1 {
+		dir = dir[:i]
+	}
+	if dir == "" {
+		return nil
+	}
+
+	if !IsFileExist(dir) {
+		return os.MkdirAll(dir, 0755)
+	}
+	return nil
+}
+
 // 字符串相关函数
 
 // 截取前 end 个字符 1.0.2

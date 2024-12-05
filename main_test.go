@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -84,5 +85,83 @@ func TestNumToAlphabet(t *testing.T) {
 				t.Errorf("NumToAlphabet3() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestMakeDir(t *testing.T) {
+	type args struct {
+		dir string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"1", args{"test/a"}, false},
+		{"2", args{"test/a/b/c"}, false},
+		{"3", args{"test/a/b/c/d.txt"}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := MakeDir(tt.args.dir); (err != nil) != tt.wantErr {
+				t.Errorf("MakeDir() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestMakeDirTrimFileName(t *testing.T) {
+	root, err := os.Getwd()
+	if err != nil {
+		t.Error(err)
+	}
+	type args struct {
+		dir string
+	}
+	tests := []struct {
+		name     string
+		args     args
+		wantErr  bool
+		wantPath string
+	}{
+		// WARNING: 测试后会删除新建的目录，测试用例请小心不要误删文件
+		{"0", args{"/testasjldjfiwsersmx"}, false, "/"},
+		{"1", args{root + "/testasjldjfiwsersmx/testasjldjfiwsersmx.txt"}, false, root + "/testasjldjfiwsersmx"},
+		{"2", args{"test.txt"}, false, ""},
+		{"3", args{"test/a"}, false, "test/a"},
+		{"4", args{"test/b/b.txt"}, false, "test/b"},
+		{"5", args{"test/c.txt/d.txt"}, false, "test/c.txt"},
+		{"6", args{"test/d/a/l/s/dlfiejrse.m.s.pdf"}, false, "test/d/a/l/s"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			alreadyExist := IsFileExist(tt.wantPath) // 已经存在的目录不删除，避免因测试用例错误导致真实文件被删除
+			// if alreadyExist {
+			// 	fmt.Println("已经存在的目录 不删除")
+			// }
+
+			if err := MakeDirTrimFileName(tt.args.dir); (err != nil) != tt.wantErr {
+				t.Errorf("MakeDirTrimFileName() error = %v, wantErr %v", err, tt.wantErr)
+			} else {
+				if tt.wantPath == "" {
+					return
+				}
+				// 检查目录是否存在
+				if !IsFileExist(tt.wantPath) {
+					t.Errorf("MakeDirTrimFileName() wantPath %s, but it is not here", tt.wantPath)
+				}
+				// 删除测试目录。如果目录下有其他文件，该函数将会报错，可以用来检查是否错误的生成了多余的文件夹
+				if !alreadyExist {
+					err := os.Remove(tt.wantPath)
+					if err != nil {
+						t.Error(err)
+					}
+				}
+			}
+		})
+	}
+	err = os.RemoveAll("test")
+	if err != nil {
+		t.Error(err)
 	}
 }
