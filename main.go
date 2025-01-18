@@ -177,6 +177,7 @@ func MD5(str string) string {
 
 // 获取今天零点的时间
 // 考虑时区偏移的
+//
 //	t 为空时，使用当前时间
 func ZeroClock(t *time.Time) time.Time {
 	if t == nil {
@@ -243,13 +244,13 @@ func NumToAlphabet(num int64) []byte {
 		ne = true
 	}
 	for ; num != 0; num = num / 36 {
-		offset := num%36
+		offset := num % 36
 		if ne {
 			offset = -offset
 		}
 		num_str = append(num_str, numSequence[offset])
 	}
-	
+
 	// 倒置 num_str
 	if ne {
 		num_str = append(num_str, '-')
@@ -265,6 +266,8 @@ func NumToAlphabet(num int64) []byte {
 func IsSameDay(x, y time.Time) bool {
 	return x.Day() == y.Day() && x.Month() == y.Month() && x.Year() == y.Year()
 }
+
+// region array
 
 // 判断数组里的元素是否唯一
 func IsUnique[T comparable](arr []T) bool {
@@ -327,6 +330,16 @@ func Difference[T uint | string](a, b []T) []T {
 		}
 	}
 	return res
+}
+
+// removeElement removes the element at index i from the slice without preserving order
+func RemoveElementIgnoreOrder[T any](slice []T, i int) []T {
+	if i < 0 || i >= len(slice) {
+		return slice
+	}
+
+	slice[i] = slice[len(slice)-1] // Replace the element to be removed with the last element
+	return slice[:len(slice)-1]    // Truncate the slice
 }
 
 // 判断给定的字符串是否为数值型

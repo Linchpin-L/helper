@@ -165,3 +165,31 @@ func TestMakeDirTrimFileName(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestRemoveElementIgnoreOrder(t *testing.T) {
+	type args struct {
+		slice []any
+		i     int
+	}
+	tests := []struct {
+		name string
+		args args
+		want []any
+	}{
+		{"1", args{[]any{}, 1}, []any{}},
+		{"2", args{nil, 1}, nil},
+		{"3", args{[]any{1, 2, 3}, 1}, []any{1, 3}},
+		{"4", args{[]any{1, 2, 3}, 2}, []any{1, 2}},
+		{"5", args{[]any{1, 2, 3}, 3}, []any{1, 2, 3}},
+		{"6", args{[]any{1, 2, 3}, -1}, []any{1, 2, 3}},
+		{"7", args{[]any{"a", "b", "c"}, 1}, []any{"a", "c"}},
+		{"8", args{[]any{true, false, true}, 0}, []any{true, false}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := RemoveElementIgnoreOrder(tt.args.slice, tt.args.i); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("RemoveElementWithoutOrder() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
