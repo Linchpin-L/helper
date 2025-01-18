@@ -176,10 +176,17 @@ func MD5(str string) string {
 // region time
 
 // 获取今天零点的时间
-// 考虑时区偏移的，不考虑秒以下时间
-func ZeroClock() time.Time {
-	today := time.Now()
-	return today.Add(-time.Duration(today.Hour()*3600+today.Minute()*60+today.Second()) * time.Second)
+// 考虑时区偏移的
+//
+//	t 为空时，使用当前时间
+func ZeroClock(t *time.Time) time.Time {
+	if t == nil {
+		temp := time.Now()
+		t = &temp
+	}
+	temp := t.Truncate(time.Hour)
+	t = &temp
+	return t.Add(-time.Duration(t.Hour()) * time.Hour)
 }
 
 // 获取今天零点的时间戳
@@ -225,12 +232,33 @@ func RandBytes(len int) []byte {
 }
 
 // 将十进制数转换成 36 进制的
-// 1.0.1
-func NumToAlphabet(num int64) string {
-	num_str := ""
-	for ; num != 0; num = num / 36 {
-		num_str = string(numSequence[num%36]) + num_str
+// 仅包含数字和小写字母
+func NumToAlphabet(num int64) []byte {
+	if num == 0 {
+		return []byte("0")
 	}
+
+	num_str := []byte{}
+	ne := false
+	if num < 0 {
+		ne = true
+	}
+	for ; num != 0; num = num / 36 {
+		offset := num % 36
+		if ne {
+			offset = -offset
+		}
+		num_str = append(num_str, numSequence[offset])
+	}
+
+	// 倒置 num_str
+	if ne {
+		num_str = append(num_str, '-')
+	}
+	for i, j := 0, len(num_str)-1; i < j; i, j = i+1, j-1 {
+		num_str[i], num_str[j] = num_str[j], num_str[i]
+	}
+
 	return num_str
 }
 
@@ -238,6 +266,8 @@ func NumToAlphabet(num int64) string {
 func IsSameDay(x, y time.Time) bool {
 	return x.Day() == y.Day() && x.Month() == y.Month() && x.Year() == y.Year()
 }
+
+// region array
 
 // 判断数组里的元素是否唯一
 func IsUnique[T comparable](arr []T) bool {
@@ -253,6 +283,7 @@ func IsUnique[T comparable](arr []T) bool {
 }
 
 // 判断数组中是否包含指定元素
+//
 //	arr: 数组
 //	ele: 要判断的元素
 func InArray[T string | uint](arr []T, ele T) bool {
@@ -299,6 +330,16 @@ func Difference[T uint | string](a, b []T) []T {
 		}
 	}
 	return res
+}
+
+// removeElement removes the element at index i from the slice without preserving order
+func RemoveElementIgnoreOrder[T any](slice []T, i int) []T {
+	if i < 0 || i >= len(slice) {
+		return slice
+	}
+
+	slice[i] = slice[len(slice)-1] // Replace the element to be removed with the last element
+	return slice[:len(slice)-1]    // Truncate the slice
 }
 
 // 判断给定的字符串是否为数值型
@@ -461,6 +502,31 @@ func IsFileExist(path string) bool {
 
 // 当给定的文件夹不存在时, 创建它
 func MakeDir(dir string) error {
+	if !IsFileExist(dir) {
+		return os.MkdirAll(dir, 0755)
+	}
+	return nil
+}
+
+// 当给定的文件夹不存在时, 创建它
+// 如果给定的路径末尾包含了文件后缀，那么忽略它，只创建之前的路径
+func MakeDirTrimFileName(dir string) error {
+	if dir == "" {
+		return nil
+	}
+
+	i := strings.LastIndex(dir, "/")
+	if i == -1 {
+		i = 0
+	}
+	j := strings.LastIndex(dir[i:], ".") // 在最后一个目录中查找文件后缀。查到则忽略整个区间
+	if j != -1 {
+		dir = dir[:i]
+	}
+	if dir == "" {
+		return nil
+	}
+
 	if !IsFileExist(dir) {
 		return os.MkdirAll(dir, 0755)
 	}
