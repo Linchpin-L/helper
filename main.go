@@ -208,7 +208,7 @@ func GetFirstDayOfWeek(today time.Time) time.Time {
 	}
 	theDay := today.AddDate(0, 0, -int(weekday))
 	// 减去今天是周几，即可得到本周一的日期
-	return time.Date(theDay.Year(), theDay.Month(), theDay.Day(), 0, 0, 0, 0, today.Location())
+	return ZeroClock(&theDay)
 }
 
 // 获取本月月初的时间

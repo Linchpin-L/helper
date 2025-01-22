@@ -193,3 +193,39 @@ func TestRemoveElementIgnoreOrder(t *testing.T) {
 		})
 	}
 }
+func TestGetFirstDayOfWeek(t *testing.T) {
+	tests := []struct {
+		name string
+		today time.Time
+		want time.Time
+	}{
+		{
+			name: "Monday",
+			today: time.Date(2023, 10, 2, 12, 0, 0, 0, time.Local), // Monday
+			want: time.Date(2023, 10, 2, 0, 0, 0, 0, time.Local),
+		},
+		{
+			name: "Wednesday",
+			today: time.Date(2023, 10, 4, 12, 0, 0, 0, time.Local), // Wednesday
+			want: time.Date(2023, 10, 2, 0, 0, 0, 0, time.Local),
+		},
+		{
+			name: "Sunday",
+			today: time.Date(2023, 10, 8, 12, 23, 59, 59, time.Local), // Sunday
+			want: time.Date(2023, 10, 2, 0, 0, 0, 0, time.Local),
+		},
+		{
+			name: "Saturday",
+			today: time.Date(2023, 10, 7, 12, 1, 1, 1, time.Local), // Saturday
+			want: time.Date(2023, 10, 2, 0, 0, 0, 0, time.Local),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetFirstDayOfWeek(tt.today); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetFirstDayOfWeek() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
