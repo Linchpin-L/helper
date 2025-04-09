@@ -538,6 +538,9 @@ func MakeDirTrimFileName(dir string) error {
 // 截取前 end 个字符 1.0.2
 func SubStr(s string, end int) string {
 	temp := []rune(s)
+	if end < 0 {
+		return ""
+	}
 	if end >= len(temp) {
 		return s
 	}
