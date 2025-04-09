@@ -195,29 +195,29 @@ func TestRemoveElementIgnoreOrder(t *testing.T) {
 }
 func TestGetFirstDayOfWeek(t *testing.T) {
 	tests := []struct {
-		name string
+		name  string
 		today time.Time
-		want time.Time
+		want  time.Time
 	}{
 		{
-			name: "Monday",
+			name:  "Monday",
 			today: time.Date(2023, 10, 2, 12, 0, 0, 0, time.Local), // Monday
-			want: time.Date(2023, 10, 2, 0, 0, 0, 0, time.Local),
+			want:  time.Date(2023, 10, 2, 0, 0, 0, 0, time.Local),
 		},
 		{
-			name: "Wednesday",
+			name:  "Wednesday",
 			today: time.Date(2023, 10, 4, 12, 0, 0, 0, time.Local), // Wednesday
-			want: time.Date(2023, 10, 2, 0, 0, 0, 0, time.Local),
+			want:  time.Date(2023, 10, 2, 0, 0, 0, 0, time.Local),
 		},
 		{
-			name: "Sunday",
+			name:  "Sunday",
 			today: time.Date(2023, 10, 8, 12, 23, 59, 59, time.Local), // Sunday
-			want: time.Date(2023, 10, 2, 0, 0, 0, 0, time.Local),
+			want:  time.Date(2023, 10, 2, 0, 0, 0, 0, time.Local),
 		},
 		{
-			name: "Saturday",
+			name:  "Saturday",
 			today: time.Date(2023, 10, 7, 12, 1, 1, 1, time.Local), // Saturday
-			want: time.Date(2023, 10, 2, 0, 0, 0, 0, time.Local),
+			want:  time.Date(2023, 10, 2, 0, 0, 0, 0, time.Local),
 		},
 	}
 	for _, tt := range tests {
@@ -229,3 +229,31 @@ func TestGetFirstDayOfWeek(t *testing.T) {
 	}
 }
 
+func TestAnonymizeByOffset(t *testing.T) {
+	type args struct {
+		name   string
+		prefix int
+		suffix int
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"1", args{"1234567890123456", 6, 4}, "123456******3456"},
+		{"2", args{"1234567890123456", 0, 0}, "****************"},
+		{"3", args{"1234567890123456", 0, 4}, "************3456"},
+		{"4", args{"1234567", 3, 0}, "123****"},
+		{"5", args{"1234", 5, 5}, "1234"},
+		{"6", args{"1234567890", 9, 10}, "1234567890"},
+		{"7", args{"", 0, 10}, ""},
+		{"8", args{"周123", 1, 1}, "周**3"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := AnonymizeByOffset(tt.args.name, tt.args.prefix, tt.args.suffix); got != tt.want {
+				t.Errorf("AnonymizeByOffset() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -565,6 +565,19 @@ func Anonymous(name string, onlyFirstName bool) string {
 	return string(uni[0]) + "*" + string(uni[len(uni)-1])
 }
 
+// 通过指定保留的前缀长度，后缀长度，隐藏字符串中间的部分
+// 可以用于诸如手机号，身份证号等的匿名化处理
+func AnonymizeByOffset(name string, prefix int, suffix int) string {
+	if name == "" {
+		return name
+	}
+	uni := []rune(name)
+	if len(uni) <= prefix+suffix {
+		return name
+	}
+	return string(uni[:prefix]) + strings.Repeat("*", len(uni)-prefix-suffix) + string(uni[len(uni)-suffix:])
+}
+
 // 检查要求字符串只能包含uint和逗号，且数字必须合法
 func IsNumberCombinedWithComma(s string) bool {
 	ss := strings.Split(s, ",")
