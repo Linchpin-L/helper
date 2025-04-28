@@ -326,7 +326,6 @@ func ReplaceInTurn(s string, old string, new []string) string {
 			break
 		}
 		pos += offset
-		// 替换第一个匹配的old字符串为new[i]
 		s = s[:pos] + new[i] + s[pos+l:]
 		offset += len(new[i])
 	}
