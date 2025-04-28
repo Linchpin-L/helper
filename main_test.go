@@ -257,3 +257,33 @@ func TestAnonymizeByOffset(t *testing.T) {
 		})
 	}
 }
+
+func TestReplaceInTurn(t *testing.T) {
+	type args struct {
+		s   string
+		old string
+		new []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"1", args{"1234567890123456", "1234", []string{""}}, "567890123456"},
+		{"2", args{"1234567890123456", "1234", []string{"1234", "5678"}}, "1234567890567856"},
+		{"3", args{"1234567890123456", "1234", []string{"1234A", "5678A", "9012"}}, "1234A5678905678A56"},
+		{"4", args{"1234567890123456", "1234", []string{}}, "1234567890123456"},
+		{"5", args{"", "1234", []string{"1234", "5678"}}, ""},
+		{"6", args{"", "", []string{}}, ""},
+		{"7", args{"1234567890123456", "", []string{"a", "v", "c"}}, "1234567890123456"},
+		{"8", args{"你好，我的世界你好", "你好", []string{"我很好", "你好吗？"}}, "我很好，我的世界你好吗？"},
+		{"9", args{"1234567890123456", "1234", []string{"", "5678"}}, "567890567856"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ReplaceInTurn(tt.args.s, tt.args.old, tt.args.new); got != tt.want {
+				t.Errorf("ReplaceInTurn() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

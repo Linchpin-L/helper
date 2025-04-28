@@ -312,6 +312,27 @@ func Join[T string | uint | int | uint64](arr []T, sep string) string {
 	return strings.Join(rows, sep)
 }
 
+// 使用 new 依次替换 s 中的 old 字符串，不会重复替换
+//	old  字符串为空时，返回原字符串
+func ReplaceInTurn(s string, old string, new []string) string {
+	if old == "" {
+		return s
+	}
+	l := len(old)
+	offset := 0
+	for i := range new {
+		pos := strings.Index(s[offset:], old)
+		if pos == -1 {
+			break
+		}
+		pos += offset
+		// 替换第一个匹配的old字符串为new[i]
+		s = s[:pos] + new[i] + s[pos+l:]
+		offset += len(new[i])
+	}
+	return s
+}
+
 // 差集
 // a 中存在但 b 中不存在的值
 // 1.0.5 泛型实现
