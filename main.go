@@ -286,7 +286,7 @@ func IsUnique[T comparable](arr []T) bool {
 //
 //	arr: 数组
 //	ele: 要判断的元素
-func InArray[T string | uint](arr []T, ele T) bool {
+func InArray[T comparable](arr []T, ele T) bool {
 	for i, l := 0, len(arr); i < l; i++ {
 		if arr[i] == ele {
 			return true
@@ -310,6 +310,26 @@ func Join[T string | uint | int | uint64](arr []T, sep string) string {
 
 	// 使用strings.Join函数将rows切片中的元素连接成一个字符串，元素之间用sep分隔。
 	return strings.Join(rows, sep)
+}
+
+// 使用 new 依次替换 s 中的 old 字符串，不会重复替换
+//	old  字符串为空时，返回原字符串
+func ReplaceInTurn(s string, old string, new []string) string {
+	if old == "" {
+		return s
+	}
+	l := len(old)
+	offset := 0
+	for i := range new {
+		pos := strings.Index(s[offset:], old)
+		if pos == -1 {
+			break
+		}
+		pos += offset
+		s = s[:pos] + new[i] + s[pos+l:]
+		offset += len(new[i])
+	}
+	return s
 }
 
 // 差集
