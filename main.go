@@ -286,7 +286,7 @@ func IsUnique[T comparable](arr []T) bool {
 //
 //	arr: 数组
 //	ele: 要判断的元素
-func InArray[T string | uint](arr []T, ele T) bool {
+func InArray[T comparable](arr []T, ele T) bool {
 	for i, l := 0, len(arr); i < l; i++ {
 		if arr[i] == ele {
 			return true
