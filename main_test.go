@@ -229,6 +229,75 @@ func TestGetFirstDayOfWeek(t *testing.T) {
 	}
 }
 
+func TestGetFirstDayOfQuarter(t *testing.T) {
+	type args struct {
+		now time.Time
+	}
+	tests := []struct {
+		name string
+		args args
+		want time.Time
+	}{
+		{
+			name: "Q1_2",
+			args: args{time.Date(2024, 2, 29, 12, 0, 0, 0, time.Local)},
+			want: time.Date(2024, 1, 1, 0, 0, 0, 0, time.Local),
+		},
+		{
+			name: "Q1_3",
+			args: args{time.Date(2023, 3, 31, 23, 59, 59, 0, time.Local)},
+			want: time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local),
+		},
+		{
+			name: "Q1_1",
+			args: args{time.Date(2024, 1, 29, 12, 0, 0, 0, time.Local)},
+			want: time.Date(2024, 1, 1, 0, 0, 0, 0, time.Local),
+		},
+		{
+			name: "Q2_6",
+			args: args{time.Date(2023, 6, 30, 23, 59, 59, 0, time.Local)},
+			want: time.Date(2023, 4, 1, 0, 0, 0, 0, time.Local),
+		},
+		{
+			name: "Q2_4",
+			args: args{time.Date(2024, 4, 1, 0, 0, 0, 0, time.Local)},
+			want: time.Date(2024, 4, 1, 0, 0, 0, 0, time.Local),
+		},
+		{
+			name: "Q2_5",
+			args: args{time.Date(2023, 5, 15, 10, 10, 10, 0, time.Local)},
+			want: time.Date(2023, 4, 1, 0, 0, 0, 0, time.Local),
+		},
+		{
+			name: "Q3",
+			args: args{time.Date(2023, 7, 1, 0, 0, 0, 0, time.Local)},
+			want: time.Date(2023, 7, 1, 0, 0, 0, 0, time.Local),
+		},
+		{
+			name: "Q3_end",
+			args: args{time.Date(2023, 9, 30, 23, 59, 59, 0, time.Local)},
+			want: time.Date(2023, 7, 1, 0, 0, 0, 0, time.Local),
+		},
+		{
+			name: "Q4",
+			args: args{time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local)},
+			want: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+		},
+		{
+			name: "Q4_mid",
+			args: args{time.Date(2023, 12, 15, 12, 0, 0, 0, time.Local)},
+			want: time.Date(2023, 10, 1, 0, 0, 0, 0, time.Local),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetFirstDayOfQuarter(tt.args.now); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetFirstDayOfQuarter() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestAnonymizeByOffset(t *testing.T) {
 	type args struct {
 		name   string

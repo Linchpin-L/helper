@@ -216,6 +216,23 @@ func GetFirstDayOfMonth(today time.Time) time.Time {
 	return time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, today.Location())
 }
 
+// 获取 t 所在季度的初始时间
+func GetFirstDayOfQuarter(t time.Time) time.Time {
+	// 获取当前月份
+	month := t.Month()
+	if month >= 10 {
+		month = 10
+	} else if month >= 7 {
+		month = 7
+	} else if month >= 4 {
+		month = 4
+	} else {
+		month = 1
+	}
+	// 返回季度的起始月份的开始时间
+	return time.Date(t.Year(), month, 1, 0, 0, 0, 0, t.Location())
+}
+
 const numSequence = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 // 获取指定长度的随机字符串，仅包含字母和数字
@@ -313,6 +330,7 @@ func Join[T string | uint | int | uint64](arr []T, sep string) string {
 }
 
 // 使用 new 依次替换 s 中的 old 字符串，不会重复替换
+//
 //	old  字符串为空时，返回原字符串
 func ReplaceInTurn(s string, old string, new []string) string {
 	if old == "" {
