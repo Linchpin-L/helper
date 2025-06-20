@@ -356,3 +356,29 @@ func TestReplaceInTurn(t *testing.T) {
 		})
 	}
 }
+
+func TestSubStr(t *testing.T) {
+	type args struct {
+		s   string
+		end int
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"1", args{"你好，世界", 3}, "你好，"},
+		{"2", args{"你好，世界", 0}, ""},
+		{"3", args{"你好，世界", 6}, "你好，世界"},
+		{"4", args{"1234567890", -1}, ""},
+		{"5", args{"1234567890", 15}, "1234567890"},
+		{"6", args{"", 5}, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := SubStr(tt.args.s, tt.args.end); got != tt.want {
+				t.Errorf("SubStr() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

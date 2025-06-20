@@ -303,8 +303,10 @@ func IsUnique[T comparable](arr []T) bool {
 //
 //	arr: 数组
 //	ele: 要判断的元素
+//
+// deprecated: 使用 slices.Contains
 func InArray[T comparable](arr []T, ele T) bool {
-	for i, l := 0, len(arr); i < l; i++ {
+	for i := range arr {
 		if arr[i] == ele {
 			return true
 		}
@@ -573,10 +575,11 @@ func MakeDirTrimFileName(dir string) error {
 
 // 字符串相关函数
 
-// 截取前 end 个字符 1.0.2
+// 截取前 end 个字符（rune）
+//	如果 end 小于等于 0，返回空字符串
 func SubStr(s string, end int) string {
 	temp := []rune(s)
-	if end < 0 {
+	if end <= 0 {
 		return ""
 	}
 	if end >= len(temp) {
