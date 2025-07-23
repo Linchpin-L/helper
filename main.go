@@ -705,14 +705,6 @@ func CheckMobile(mobile string) bool {
 	return matched
 }
 
-// 根据年龄计算出生日期
-func CalBirthday(age uint8) int64 {
-	now := time.Now()
-	// 计算出生年份
-	birthYear := now.AddDate(-int(age), 0, 0)
-	return birthYear.Unix()
-}
-
 // des加密,返回加密后的16进制字符串
 func EncryptByDESCBC(message, key, iv string) (string, error) {
 	// 将key和iv转换为字节切片
