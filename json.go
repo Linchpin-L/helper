@@ -1,8 +1,13 @@
 package helper
 
 import (
+	"database/sql/driver"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"slices"
 	"strconv"
+	"time"
 )
 
 // json 解析前，可以是字符串形式，也可能是数字形式
@@ -65,4 +70,46 @@ func (u *UnstableFloat) UnmarshalJSON(data []byte) error {
 func (u UnstableFloat) MarshalJSON() ([]byte, error) {
 	num := strconv.FormatFloat(float64(u), 'f', -1, 64)
 	return []byte(num), nil
+}
+
+// 只是用 年月日 的日期格式，即：2006-01-02
+type Date time.Time
+
+func (j Date) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Time(j).Format("2006-01-02"))
+}
+
+func (j *Date) UnmarshalJSON(data []byte) error {
+	if len(data) <= 2 {
+		return errors.New("invalid time format")
+	}
+	if slices.Equal(data, []byte("null")) {
+		return nil
+	}
+	if data[0] != '"' || data[len(data)-1] != '"' { // 检测数据格式
+		return errors.New("invalid time format")
+	}
+	t, err := time.Parse("2006-01-02", string(data[1:len(data)-1]))
+	if err != nil {
+		return err
+	}
+	*j = Date(t)
+	return nil
+}
+
+func (j Date) Value() (driver.Value, error) {
+	return time.Time(j), nil
+}
+
+func (j *Date) Scan(value interface{}) error {
+	if value == nil {
+		*j = Date(time.Time{})
+		return nil
+	}
+
+	if t, ok := value.(time.Time); ok {
+		*j = Date(t)
+		return nil
+	}
+	return fmt.Errorf("无法扫描类型 %T 到 JSONDate", value)
 }
