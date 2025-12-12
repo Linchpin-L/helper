@@ -72,7 +72,8 @@ func (u UnstableFloat) MarshalJSON() ([]byte, error) {
 	return []byte(num), nil
 }
 
-// 只是用 年月日 的日期格式，即：2006-01-02
+// 只使用 年月日 的日期格式，即：2006-01-02，可应用于数据库 date 格式。
+//
 // 当从字符解析到时间格式时，时区将被设置为 Local
 type Date time.Time
 
