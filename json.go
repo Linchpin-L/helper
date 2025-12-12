@@ -73,6 +73,7 @@ func (u UnstableFloat) MarshalJSON() ([]byte, error) {
 }
 
 // 只是用 年月日 的日期格式，即：2006-01-02
+// 当从字符解析到时间格式时，时区将被设置为 Local
 type Date time.Time
 
 func (j Date) MarshalJSON() ([]byte, error) {
@@ -89,7 +90,8 @@ func (j *Date) UnmarshalJSON(data []byte) error {
 	if data[0] != '"' || data[len(data)-1] != '"' { // 检测数据格式
 		return errors.New("invalid time format")
 	}
-	t, err := time.Parse("2006-01-02", string(data[1:len(data)-1]))
+	t, err := time.ParseInLocation("2006-01-02", string(data[1:len(data)-1]), time.Local)
+	// t, err := time.Parse("2006-01-02", string(data[1:len(data)-1]))
 	if err != nil {
 		return err
 	}
