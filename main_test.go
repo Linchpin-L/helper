@@ -382,3 +382,96 @@ func TestSubStr(t *testing.T) {
 		})
 	}
 }
+
+// region array
+
+func TestIsDifference(t *testing.T) {
+	tests := []struct {
+		name     string
+		a        []any
+		b        []any
+		expected bool
+	}{
+		{
+			name:     "identical slices",
+			a:        []any{1, 2, 3, 4, 5},
+			b:        []any{1, 2, 3, 4, 5},
+			expected: false,
+		},
+		{
+			name:     "different elements",
+			a:        []any{1, 2, 3},
+			b:        []any{4, 5, 6},
+			expected: true,
+		},
+		{
+			name:     "same elements different order",
+			a:        []any{1, 2, 3},
+			b:        []any{3, 1, 2},
+			expected: false,
+		},
+		{
+			name:     "one slice is subset",
+			a:        []any{1, 2, 3, 4},
+			b:        []any{1, 2, 3},
+			expected: true,
+		},
+		{
+			name:     "duplicate elements same set",
+			a:        []any{1, 1, 2, 2, 3},
+			b:        []any{3, 2, 1, 2, 1},
+			expected: false,
+		},
+		{
+			name:     "duplicate elements different sets",
+			a:        []any{1, 1, 2, 2, 3},
+			b:        []any{1, 1, 2, 2, 4},
+			expected: true,
+		},
+		{
+			name:     "empty slices",
+			a:        []any{},
+			b:        []any{},
+			expected: false,
+		},
+		{
+			name:     "one empty slice",
+			a:        []any{},
+			b:        []any{1, 2},
+			expected: true,
+		},
+		{
+			name:     "different lengths same elements",
+			a:        []any{1, 2},
+			b:        []any{1, 2, 1},
+			expected: false,
+		},
+		{
+			name:     "string identical slices",
+			a:        []any{"apple", "banana", "cherry"},
+			b:        []any{"apple", "banana", "cherry"},
+			expected: false,
+		},
+		{
+			name:     "string different elements",
+			a:        []any{"apple", "banana"},
+			b:        []any{"apple", "grape"},
+			expected: true,
+		},
+		{
+			name:     "string same elements different order",
+			a:        []any{"apple", "banana"},
+			b:        []any{"banana", "apple"},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsDifferenceIgnoreOrder(tt.a, tt.b)
+			if result != tt.expected {
+				t.Errorf("HasDifferentElement(%v, %v) = %v; expected %v", tt.a, tt.b, result, tt.expected)
+			}
+		})
+	}
+}

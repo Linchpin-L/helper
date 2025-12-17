@@ -372,6 +372,36 @@ func Difference[T uint | string](a, b []T) []T {
 	return res
 }
 
+// HasDifferentElement 检查两个切片代表的集合是否至少有一个不同的元素
+// 函数会对元素去重，因此不考虑元素出现的数量，不关心元素出现的顺序
+func IsDifferenceIgnoreOrder[T comparable](a, b []T) bool {
+	set1 := toSet(a)
+	set2 := toSet(b)
+
+	// 如果大小不同，肯定有不同元素
+	if len(set1) != len(set2) {
+		return true
+	}
+
+	// 检查所有元素是否相同
+	for k := range set1 {
+		if _, exists := set2[k]; !exists {
+			return true
+		}
+	}
+
+	return false
+}
+
+// toSet 将切片转换为集合（去重）
+func toSet[T comparable](slice []T) map[T]struct{} {
+	set := make(map[T]struct{}, len(slice))
+	for _, v := range slice {
+		set[v] = struct{}{}
+	}
+	return set
+}
+
 // removeElement removes the element at index i from the slice without preserving order
 func RemoveElementIgnoreOrder[T any](slice []T, i int) []T {
 	if i < 0 || i >= len(slice) {
@@ -576,6 +606,7 @@ func MakeDirTrimFileName(dir string) error {
 // 字符串相关函数
 
 // 截取前 end 个字符（rune）
+//
 //	如果 end 小于等于 0，返回空字符串
 func SubStr(s string, end int) string {
 	temp := []rune(s)
