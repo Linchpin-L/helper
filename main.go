@@ -7,6 +7,7 @@ import (
 	"crypto/des"
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -809,4 +810,12 @@ func Divide(a, b int) float64 {
 	result := float64(a) / float64(b)
 	res := math.Round(result*100) / 100 // 先乘以100四舍五入，再除以100得到保留两位的结果
 	return res
+}
+
+// region print
+
+// 将 data 转换为 json 字符串
+func PrintJson(data any) (string, error) {
+	a, err := json.Marshal(data)
+	return string(a), err
 }
