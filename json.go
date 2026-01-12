@@ -116,3 +116,31 @@ func (j *Date) Scan(value interface{}) error {
 	}
 	return fmt.Errorf("无法扫描类型 %T 到 JSONDate", value)
 }
+
+type DateTime time.Time
+
+func (t *DateTime) GetFormat() string {
+	return time.DateTime
+}
+
+func (t DateTime) MarshalJSON() ([]byte, error) {
+	b := make([]byte, 0, len(t.GetFormat())+2)
+	b = append(b, '"')
+	b = time.Time(t).AppendFormat(b, t.GetFormat())
+	b = append(b, '"')
+	return b, nil
+}
+
+func (t *DateTime) UnmarshalJSON(bs []byte) error {
+	var s string
+	err := json.Unmarshal(bs, &s)
+	if err != nil {
+		return err
+	}
+	tt, err := time.ParseInLocation(t.GetFormat(), s, time.Local)
+	if err != nil {
+		return err
+	}
+	*t = DateTime(tt)
+	return nil
+}
