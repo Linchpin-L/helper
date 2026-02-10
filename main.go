@@ -819,3 +819,13 @@ func PrintJson(data any) (string, error) {
 	a, err := json.Marshal(data)
 	return string(a), err
 }
+
+// 将 data 转换为 json 字符串
+// 总是不返回错误，便于某些场景下的行内打印
+func PrintJsonWithoutErr(data any) string {
+	a, err := json.Marshal(data)
+	if err != nil {
+		return ""
+	}
+	return string(a)
+}
