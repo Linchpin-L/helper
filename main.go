@@ -234,7 +234,7 @@ func GetFirstDayOfQuarter(t time.Time) time.Time {
 	return time.Date(t.Year(), month, 1, 0, 0, 0, 0, t.Location())
 }
 
-// 获取给定时间所在年的第一天零点 Unix 时间戳（秒）
+// 获取给定时间所在年的第一天零点
 func GetFirstDayOfYear(t time.Time) time.Time {
 	return time.Date(t.Year(), 1, 1, 0, 0, 0, 0, t.Location())
 }
