@@ -234,17 +234,14 @@ func GetFirstDayOfQuarter(t time.Time) time.Time {
 	return time.Date(t.Year(), month, 1, 0, 0, 0, 0, t.Location())
 }
 
-// 获取当年1月1日00:00:00的时间戳
-func GetZeroClockStartYearUnix() int64 {
-	now := time.Now()
-	startOfYear := time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location())
-	return startOfYear.Unix() // 返回 int64// 返回10位时间戳（秒级）
+// 获取给定时间所在年的第一天零点 Unix 时间戳（秒）
+func GetFirstDayOfYear(t time.Time) time.Time {
+	return time.Date(t.Year(), 1, 1, 0, 0, 0, 0, t.Location())
 }
 
-// 返回给定时间所在的季度 (1-4)
-func GetQuarter(t time.Time) int {
-	month := int(t.Month())
-	return (month-1)/3 + 1
+// 获取给定时间所在的季度（1-4）
+func GetQuarterOfYear(t time.Time) int {
+	return int((t.Month()-1)/3) + 1
 }
 
 // region rand
