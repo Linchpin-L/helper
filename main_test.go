@@ -3,6 +3,7 @@ package helper
 import (
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -378,6 +379,181 @@ func TestSubStr(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := SubStr(tt.args.s, tt.args.end); got != tt.want {
 				t.Errorf("SubStr() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+// ---------- 解析器版本：要求语义完全正确 ----------
+func TestExtractHtmlText(t *testing.T) {
+	tests := []struct {
+		name string
+		html string
+		want string
+	}{
+		{
+			name: "empty input",
+			html: "",
+			want: "",
+		},
+		{
+			name: "plain text without tags",
+			html: "hello world",
+			want: "hello world",
+		},
+		{
+			name: "simple paragraph",
+			html: "<p>Hello</p>",
+			want: "Hello",
+		},
+		{
+			name: "nested tags",
+			html: "<div><span>text</span></div>",
+			want: "text",
+		},
+		{
+			name: "multiple siblings",
+			html: "<h1>Title</h1><p>Paragraph</p>",
+			want: "TitleParagraph",
+		},
+		{
+			name: "self-closing tag",
+			html: "line1<br/>line2",
+			want: "line1line2",
+		},
+		{
+			name: "attributes without angle bracket inside value",
+			html: `<a href="/" class="link">click</a>`,
+			want: "click",
+		},
+		{
+			name: "leading and trailing whitespace preserved",
+			html: "<p>  spaced  </p>",
+			want: "  spaced  ",
+		},
+		{
+			name: "mixed inline tags",
+			html: "<p>This is <strong>bold</strong> and <em>italic</em></p>",
+			want: "This is bold and italic",
+		},
+		{
+			name: "list items",
+			html: "<ul><li>one</li><li>two</li></ul>",
+			want: "onetwo",
+		},
+		// ---- 以下是正则无法正确处理，但解析器必须正确的场景 ----
+		{
+			name: "script tag content ignored",
+			html: "<p>visible</p><script>console.log('hidden')</script>",
+			want: "visible",
+		},
+		{
+			name: "style tag content ignored",
+			html: "<style>body { color: red; }</style><p>text</p>",
+			want: "text",
+		},
+		{
+			name: "HTML comment ignored",
+			html: "<!-- comment --><p>real</p>",
+			want: "real",
+		},
+		{
+			name: "attribute value containing angle bracket",
+			html: `<a title="a > b">link</a>`,
+			want: "link",
+		},
+		{
+			name: "doctype ignored",
+			html: "<!DOCTYPE html><p>content</p>",
+			want: "content",
+		},
+		{
+			name: "nested script and style inside div",
+			html: "<div><script>x()</script><p>keep</p><style>h1{}</style></div>",
+			want: "keep",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ExtractHtmlText(strings.NewReader(tt.html))
+			if err != nil {
+				t.Fatalf("ExtractHtmlText returned error: %v", err)
+			}
+			if got != tt.want {
+				t.Errorf("ExtractHtmlText = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// ---------- 正则版本：仅包含它能正确处理的输入 ----------
+func TestExtractHtmlTextWithRegex(t *testing.T) {
+	tests := []struct {
+		name string
+		html string
+		want string
+	}{
+		{
+			name: "empty input",
+			html: "",
+			want: "",
+		},
+		{
+			name: "plain text without tags",
+			html: "hello world",
+			want: "hello world",
+		},
+		{
+			name: "simple paragraph",
+			html: "<p>Hello</p>",
+			want: "Hello",
+		},
+		{
+			name: "nested tags",
+			html: "<div><span>text</span></div>",
+			want: "text",
+		},
+		{
+			name: "multiple siblings",
+			html: "<h1>Title</h1><p>Paragraph</p>",
+			want: "TitleParagraph",
+		},
+		{
+			name: "self-closing tag",
+			html: "line1<br/>line2",
+			want: "line1line2",
+		},
+		{
+			name: "attributes without angle bracket inside value",
+			html: `<a href="/" class="link">click</a>`,
+			want: "click",
+		},
+		{
+			name: "leading and trailing whitespace preserved",
+			html: "<p>  spaced  </p>",
+			want: "  spaced  ",
+		},
+		{
+			name: "mixed inline tags",
+			html: "<p>This is <strong>bold</strong> and <em>italic</em></p>",
+			want: "This is bold and italic",
+		},
+		{
+			name: "list items",
+			html: "<ul><li>one</li><li>two</li></ul>",
+			want: "onetwo",
+		},
+		// 注意：没有 script、style、注释、属性值含 '>' 的用例
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			got := ExtractHtmlTextWithRegex(tt.html)
+			if got != tt.want {
+				t.Errorf("ExtractHtmlTextWithRegex = %q, want %q", got, tt.want)
 			}
 		})
 	}

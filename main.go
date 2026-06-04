@@ -19,6 +19,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"golang.org/x/net/html"
 )
 
 // const version = "1.0.13"
@@ -616,7 +618,7 @@ func MakeDirTrimFileName(dir string) error {
 	return nil
 }
 
-// 字符串相关函数
+// region string
 
 // 截取前 end 个字符（rune）
 //
@@ -678,6 +680,50 @@ func IsNumberCombinedWithComma(s string) bool {
 	}
 	return true
 }
+
+// 提取 html 中会被渲染出的文本
+//
+// 使用 html.Parse 解析并递归提取 TextNode，会跳过 script 和 style 标签中的文本
+//
+// 如果要解析的 html 相对简单，比如没有 script，不会出现针对性异常属性，则可以直接使用正则版本，效率会更高 ExtractHtmlTextWithRegex
+func ExtractHtmlText(r *strings.Reader) (string, error) {
+	doc, err := html.Parse(r)
+	if err != nil {
+		return "", err
+	}
+	var sb strings.Builder
+	var extractText func(*html.Node)
+	extractText = func(n *html.Node) {
+		// 忽略 <script> 和 <style> 的全部子节点
+		if n.Type == html.ElementNode && (n.Data == "script" || n.Data == "style") {
+			return
+		}
+		if n.Type == html.TextNode {
+			sb.WriteString(n.Data)
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			extractText(c)
+		}
+	}
+	extractText(doc)
+	return sb.String(), nil
+}
+
+// 预编译正则，避免在每次调用时重复编译
+var tagRegex = regexp.MustCompile(`<[^>]*>`)
+
+// 提取 html 中的文本
+//
+// 正则版本：直接替换所有标签为空字符串
+//
+// 正则版本速度会更快，但是无法处理所有的情况，比如 <a title="a > b">link</a>，<script>console.log('world')</script> 内的文本会被展示，因此如果需要更准确的结果，建议使用 ExtractHtmlText
+//
+// 你也可以在部分数据库中直接使用 REGEXP_REPLACE(s.profile, '<[^>]*>', '') 来实现同样的功能，避免取回大量数据
+func ExtractHtmlTextWithRegex(htmlStr string) string {
+	return tagRegex.ReplaceAllString(htmlStr, "")
+}
+
+// region float
 
 // 对浮点数进行四舍五入,保留prec位
 func RoundPrec(num float64, prec int) float64 {
