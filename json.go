@@ -100,11 +100,13 @@ func (j *Date) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// 只响应一个日期
 func (j Date) Value() (driver.Value, error) {
-	return time.Time(j), nil
+	t := time.Time(j)
+	return t.Format("2006-01-02"), nil
 }
 
-func (j *Date) Scan(value interface{}) error {
+func (j *Date) Scan(value any) error {
 	if value == nil {
 		*j = Date(time.Time{})
 		return nil
