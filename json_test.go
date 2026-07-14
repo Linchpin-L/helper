@@ -2,6 +2,7 @@ package helper
 
 import (
 	"bytes"
+	"database/sql/driver"
 	"encoding/json"
 	"math"
 	"strconv"
@@ -205,7 +206,7 @@ func TestDate_UnmarshalJSON(t *testing.T) {
 		{
 			name:     "正常日期解析",
 			jsonStr:  `"2023-12-25"`,
-			expected: Date(time.Date(2023, 12, 25, 0, 0, 0, 0, time.Local)),
+			expected: NewDate(2023, time.December, 25),
 			wantErr:  false,
 		},
 		{
@@ -252,8 +253,8 @@ func TestDate_UnmarshalJSON(t *testing.T) {
 
 			if !tt.wantErr {
 				// 比较时间部分（忽略时区差异）
-				expectedTime := time.Time(tt.expected).UTC()
-				actualTime := time.Time(d).UTC()
+				expectedTime := time.Time(tt.expected)
+				actualTime := time.Time(d)
 
 				if !expectedTime.Equal(actualTime) {
 					t.Errorf("UnmarshalJSON() got = %v, want %v",
@@ -270,25 +271,25 @@ func TestDate_Value(t *testing.T) {
 	tests := []struct {
 		name     string
 		date     Date
-		expected interface{}
+		expected driver.Value
 		wantErr  bool
 	}{
 		{
 			name:     "正常日期",
-			date:     Date(time.Date(2023, 12, 25, 0, 0, 0, 0, time.UTC)),
-			expected: time.Date(2023, 12, 25, 0, 0, 0, 0, time.UTC),
+			date:     NewDate(2023, time.December, 25),
+			expected: "2023-12-25",
 			wantErr:  false,
 		},
 		{
-			name:     "零值时间",
-			date:     Date(time.Time{}),
-			expected: time.Time{},
+			name:     "零值日期",
+			date:     Date{},
+			expected: "0001-01-01",
 			wantErr:  false,
 		},
 		{
-			name:     "偏移时间",
-			date:     Date(time.Date(2025, 12, 1, 23, 33, 33, 0, time.UTC)),
-			expected: time.Date(2025, 12, 2, 7, 33, 33, 0, time.Local),
+			name:     "内部不是零点也应按日期输出",
+			date:     Date(time.Date(2025, time.December, 1, 23, 33, 33, 0, time.UTC)),
+			expected: "2025-12-01",
 			wantErr:  false,
 		},
 	}
@@ -296,18 +297,13 @@ func TestDate_Value(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.date.Value()
+
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Value() error = %v, wantErr %v", err, tt.wantErr)
-				return
+				t.Fatalf("Value() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if !tt.wantErr {
-				expectedTime := tt.expected.(time.Time)
-				actualTime := got.(time.Time)
-
-				if !expectedTime.Equal(actualTime) {
-					t.Errorf("Value() got = %v, want %v", actualTime, expectedTime)
-				}
+			if got != tt.expected {
+				t.Fatalf("Value() = %#v, want %#v", got, tt.expected)
 			}
 		})
 	}
@@ -324,7 +320,7 @@ func TestDate_Scan(t *testing.T) {
 		{
 			name:     "time.Time类型",
 			input:    time.Date(2023, 12, 25, 0, 0, 0, 0, time.UTC),
-			expected: Date(time.Date(2023, 12, 25, 0, 0, 0, 0, time.UTC)),
+			expected: NewDate(2023, time.December, 25),
 			wantErr:  false,
 		},
 		{
@@ -334,16 +330,37 @@ func TestDate_Scan(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "字符串类型（应该出错）",
+			name:     "字符串类型",
 			input:    "2023-12-25",
-			expected: Date{},
-			wantErr:  true,
+			expected: NewDate(2023, time.December, 25),
+			wantErr:  false,
 		},
 		{
 			name:     "整数类型（应该出错）",
 			input:    20231225,
 			expected: Date{},
 			wantErr:  true,
+		},
+		{
+			name:     "[]byte类型",
+			input:    []byte("2023-12-25"),
+			expected: NewDate(2023, time.December, 25),
+			wantErr:  false,
+		},
+		{
+			name: "time.Time带时分秒",
+			input: time.Date(
+				2023,
+				time.December,
+				25,
+				18,
+				30,
+				45,
+				123,
+				time.Local,
+			),
+			expected: NewDate(2023, time.December, 25),
+			wantErr:  false,
 		},
 	}
 
@@ -358,13 +375,22 @@ func TestDate_Scan(t *testing.T) {
 			}
 
 			if !tt.wantErr {
-				expectedTime := time.Time(tt.expected).UTC()
-				actualTime := time.Time(d).UTC()
+				expectedTime := time.Time(tt.expected)
+				actualTime := time.Time(d)
 
 				if !expectedTime.Equal(actualTime) {
-					t.Errorf("Scan() got = %v, want %v",
-						actualTime.Format("2006-01-02"),
-						expectedTime.Format("2006-01-02"))
+					t.Fatalf("got %v, want %v", actualTime, expectedTime)
+				}
+
+				if actualTime.Location() != time.UTC {
+					t.Fatalf("location = %v, want UTC", actualTime.Location())
+				}
+
+				if actualTime.Hour() != 0 ||
+					actualTime.Minute() != 0 ||
+					actualTime.Second() != 0 ||
+					actualTime.Nanosecond() != 0 {
+					t.Fatalf("Date should always be midnight")
 				}
 			}
 		})
@@ -379,43 +405,46 @@ func TestDate_JSONRoundTrip(t *testing.T) {
 	}{
 		{
 			name: "普通日期",
-			date: Date(time.Date(2023, 12, 25, 0, 0, 0, 0, time.Local)),
+			date: NewDate(2023, time.December, 25),
 		},
 		{
 			name: "零值日期",
-			date: Date(time.Date(1, 1, 1, 0, 0, 0, 0, time.Local)),
+			date: Date{},
 		},
 		{
 			name: "闰年日期",
-			date: Date(time.Date(2024, 2, 29, 0, 0, 0, 0, time.Local)),
+			date: NewDate(2024, time.February, 29),
 		},
 	}
 
 	for _, tt := range tests {
-		// 注意此检查方法在 Marshal 的时候一定会丢失时间精度，因为时区丢失了
-		// 而在 Unmarshal 时，我们均以当前的时区来识别时间
 		t.Run(tt.name, func(t *testing.T) {
-			// 序列化
-			jsonBytes, err := json.Marshal(tt.date)
+			data, err := json.Marshal(tt.date)
 			if err != nil {
-				t.Fatalf("Marshal failed: %v", err)
+				t.Fatalf("Marshal() error = %v", err)
 			}
 
-			// 反序列化
-			var newDate Date
-			err = json.Unmarshal(jsonBytes, &newDate)
-			if err != nil {
-				t.Fatalf("Unmarshal failed: %v", err)
+			var got Date
+			if err := json.Unmarshal(data, &got); err != nil {
+				t.Fatalf("Unmarshal() error = %v", err)
 			}
 
-			// 比较
-			originalTime := time.Time(tt.date)
-			newTime := time.Time(newDate)
+			if got != tt.date {
+				t.Fatalf("round trip mismatch: got=%v want=%v", got, tt.date)
+			}
 
-			if !originalTime.Equal(newTime) {
-				t.Errorf("RoundTrip mismatch: original = %v, after roundtrip = %v",
-					originalTime,
-					newTime)
+			// 验证 Date 的不变式
+			tm := got.UTC()
+
+			if tm.Location() != time.UTC {
+				t.Fatalf("location = %v, want UTC", tm.Location())
+			}
+
+			if tm.Hour() != 0 ||
+				tm.Minute() != 0 ||
+				tm.Second() != 0 ||
+				tm.Nanosecond() != 0 {
+				t.Fatalf("Date should always be midnight")
 			}
 		})
 	}

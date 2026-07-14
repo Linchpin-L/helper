@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"slices"
 	"strconv"
 	"time"
 )
@@ -72,51 +71,155 @@ func (u UnstableFloat) MarshalJSON() ([]byte, error) {
 	return []byte(num), nil
 }
 
-// 只使用 年月日 的日期格式，即：2006-01-02，可应用于数据库 date 格式。
+// Date 表示一个仅包含“年月日”的日期，可用于映射数据库 DATE 字段。
 //
-// 当从字符解析到时间格式时，时区将被设置为 Local
+// 与 time.Time 不同，Date 不表示一个时间点（Instant），而是一个没有时区、没有时分秒概念的日期值（Value Object）。
+//
+// 内部实现
+//
+//   - 内部借用 time.Time 作为存储结构。
+//   - 所有合法的 Date 都统一使用 UTC 00:00:00.000000000 保存。
+//   - UTC 仅作为内部规范化表示，不具有任何业务上的时区含义。
+//
+// 使用约定
+//
+//   - 应通过 NewDate、DateFromTime、Scan、UnmarshalJSON 等方法创建 Date。
+//   - 不应直接通过 Date(time.Time) 构造，否则可能破坏内部约束。
+//   - 需要进行时间计算时，应先调用 UTC() 或者 InLocation 转为 time.Time，计算完成后再使用
+//     DateFromTime() 转回 Date。
+//   - 数据库存储时输出 "2006-01-02" 格式，不参与任何时区转换。
+//   - JSON 序列化格式为 "2006-01-02"，零值序列化为 null。
+//
+// 不变式（Invariant）
+//
+// 一个合法的 Date 必须始终满足：
+//
+//   - Location == UTC
+//   - Hour == Minute == Second == Nanosecond == 0
+//
+// 因此，Date 可以安全地进行值比较（==），也能够保证在不同机器、不同时区下具有一致的内部表示。
 type Date time.Time
 
-func (j Date) MarshalJSON() ([]byte, error) {
-	return json.Marshal(time.Time(j).Format("2006-01-02"))
+// NewDate 创建一个日期。
+func NewDate(year int, month time.Month, day int) Date {
+	return Date(time.Date(year, month, day, 0, 0, 0, 0, time.UTC))
 }
 
-func (j *Date) UnmarshalJSON(data []byte) error {
-	if len(data) <= 2 {
-		return errors.New("invalid time format")
+// DateFromTime 从 time.Time 提取日期部分。
+func DateFromTime(t time.Time) Date {
+	y, m, d := t.Date()
+	return NewDate(y, m, d)
+}
+
+// UTC 返回底层 time.UTC（UTC 零点）。
+//
+// 返回值仅用于时间计算或与标准库交互。
+// 如果计算结果仍表示一个日期，应使用 DateFromTime() 转换回 Date，
+// 以保证 Date 的内部约束不被破坏。
+func (d Date) UTC() time.Time {
+    return time.Time(d)
+}
+
+// InLocation 返回本地零点的时间
+func (d Date) InLocation(loc *time.Location) time.Time {
+	t := d.UTC()
+
+	return time.Date(
+		t.Year(),
+		t.Month(),
+		t.Day(),
+		0,
+		0,
+		0,
+		0,
+		loc,
+	)
+}
+
+// String 返回 yyyy-MM-dd。
+func (d Date) String() string {
+	t := time.Time(d)
+	if t.IsZero() {
+		return ""
 	}
-	if slices.Equal(data, []byte("null")) {
-		return nil
-	}
-	if data[0] != '"' || data[len(data)-1] != '"' { // 检测数据格式
-		return errors.New("invalid time format")
-	}
-	t, err := time.ParseInLocation("2006-01-02", string(data[1:len(data)-1]), time.Local)
-	// t, err := time.Parse("2006-01-02", string(data[1:len(data)-1]))
-	if err != nil {
-		return err
-	}
-	*j = Date(t)
-	return nil
+	return t.Format(time.DateOnly)
+}
+
+// Year 返回年份。
+func (d Date) Year() int {
+	return time.Time(d).Year()
+}
+
+// Month 返回月份。
+func (d Date) Month() time.Month {
+	return time.Time(d).Month()
+}
+
+// Day 返回日期。
+func (d Date) Day() int {
+	return time.Time(d).Day()
+}
+
+func (j Date) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Time(j).Format(time.DateOnly))
+}
+
+func (d *Date) UnmarshalJSON(data []byte) error {
+    if string(data) == "null" {
+        *d = Date{}
+        return nil
+    }
+
+    var s string
+    if err := json.Unmarshal(data, &s); err != nil {
+        return err
+    }
+
+    t, err := time.Parse(time.DateOnly, s)
+    if err != nil {
+        return err
+    }
+
+    *d = DateFromTime(t)
+    return nil
 }
 
 // 只响应一个日期
 func (j Date) Value() (driver.Value, error) {
 	t := time.Time(j)
-	return t.Format("2006-01-02"), nil
+	return t.Format(time.DateOnly), nil
 }
 
-func (j *Date) Scan(value any) error {
+func (d *Date) Scan(value any) error {
 	if value == nil {
-		*j = Date(time.Time{})
+		*d = Date{}
 		return nil
 	}
 
-	if t, ok := value.(time.Time); ok {
-		*j = Date(t)
+	switch v := value.(type) {
+
+	case time.Time:
+		*d = DateFromTime(v)
+		return nil
+
+	case string:
+		t, err := time.Parse(time.DateOnly, v)
+		if err != nil {
+			return err
+		}
+		*d = DateFromTime(t)
+		return nil
+
+	case []byte:
+		t, err := time.Parse(time.DateOnly, string(v))
+		if err != nil {
+			return err
+		}
+		*d = DateFromTime(t)
 		return nil
 	}
-	return fmt.Errorf("无法扫描类型 %T 到 JSONDate", value)
+
+	return fmt.Errorf("cannot scan %T into Date", value)
 }
 
 type DateTime time.Time
