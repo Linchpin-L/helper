@@ -31,6 +31,73 @@ func TestIsIDCard(t *testing.T) {
 	}
 }
 
+func TestIsHKIDCard(t *testing.T) {
+	type args struct {
+		idcard string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		// 有效：校验码经模 11 算法验证
+		{name: "single_letter", args: args{"P103265(1)"}, want: true},
+		{name: "single_letter_2", args: args{"D784313(6)"}, want: true},
+		{name: "check_A", args: args{"G000000(A)"}, want: true},
+		{name: "double_letter", args: args{"AB123456(9)"}, want: true},
+		{name: "lowercase", args: args{"a123456(3)"}, want: true},
+		{name: "no_bracket", args: args{"C5555556"}, want: true},
+		{name: "with_space", args: args{" A123456(3) "}, want: true},
+		// 无效
+		{name: "empty", args: args{""}, want: false},
+		{name: "wrong_check", args: args{"A123456(7)"}, want: false},
+		{name: "missing_check", args: args{"A123456"}, want: false},
+		{name: "start_with_digit", args: args{"1234567(8)"}, want: false},
+		{name: "three_letters", args: args{"ABC123456(7)"}, want: false},
+		{name: "five_digits", args: args{"A12345(7)"}, want: false},
+		{name: "invalid_check_char", args: args{"A123456(B)"}, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsHKIDCard(tt.args.idcard); got != tt.want {
+				t.Errorf("IsHKIDCard(%q) = %v, want %v", tt.args.idcard, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsMacauIDCard(t *testing.T) {
+	type args struct {
+		idcard string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		// 有效：首位 1/5/7 + 6 位数字 + 查核用数码
+		{name: "prefix_1", args: args{"1234567(8)"}, want: true},
+		{name: "prefix_5", args: args{"5234567(0)"}, want: true},
+		{name: "prefix_7_check_A", args: args{"7234567(A)"}, want: true},
+		{name: "slash_format", args: args{"1/234567/8"}, want: true},
+		{name: "no_bracket", args: args{"12345678"}, want: true},
+		// 无效
+		{name: "empty", args: args{""}, want: false},
+		{name: "bad_prefix", args: args{"2234567(8)"}, want: false},
+		{name: "letter_prefix", args: args{"A234567(8)"}, want: false},
+		{name: "too_few_digits", args: args{"123456(8)"}, want: false},
+		{name: "too_many_digits", args: args{"12345678(8)"}, want: false},
+		{name: "invalid_check_char", args: args{"1234567(B)"}, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsMacauIDCard(tt.args.idcard); got != tt.want {
+				t.Errorf("IsMacauIDCard(%q) = %v, want %v", tt.args.idcard, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestZeroClock(t *testing.T) {
 	a := time.Date(2023, 1, 11, 12, 12, 12, 12, time.Local)
 	b := time.Date(2024, 2, 29, 23, 59, 59, 59, time.Local)

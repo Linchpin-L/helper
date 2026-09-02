@@ -576,6 +576,94 @@ func IsIDCard(idcard string) bool {
 	return false
 }
 
+// 港澳身份证号格式正则（匹配前已去除括号、空格与斜杠分隔符）
+var (
+	// 香港：1-2 位字母 + 6 位数字 + 1 位校验码（数字或字母 A）
+	hkIDRegex = regexp.MustCompile(`^[A-Z]{1,2}[0-9]{6}[0-9A]$`)
+	// 澳门：首位为 1、5 或 7（代表取证时代）+ 6 位数字 + 1 位查核用数码（数字或字母 A）
+	macauIDRegex = regexp.MustCompile(`^[157][0-9]{6}[0-9A]$`)
+)
+
+// normalizeIDCard 统一港澳身份证号的书写形式：
+// 转为大写，并去除首尾空格以及号码中的括号、空格与斜杠等分隔符
+func normalizeIDCard(idcard string) string {
+	s := strings.ToUpper(strings.TrimSpace(idcard))
+	var b strings.Builder
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '(', ')', ' ', '/':
+			// 忽略括号、空格与斜杠等分隔符
+		default:
+			b.WriteByte(s[i])
+		}
+	}
+	return b.String()
+}
+
+// hkCharValue 返回港澳身份证校验中单个字符对应的数值
+//
+//	字母 A-Z 依次取值 10-35，数字取值本身，空格取值 36
+func hkCharValue(c byte) int {
+	switch {
+	case c >= 'A' && c <= 'Z':
+		return int(c-'A') + 10
+	case c >= '0' && c <= '9':
+		return int(c - '0')
+	case c == ' ':
+		return 36
+	default:
+		return 0
+	}
+}
+
+// 检查香港身份证号是否正确
+//
+//	格式为 X123456(A) 或 XY123456(A)：1-2 位字母 + 6 位数字 + 括号内的校验码（0-9 或 A）
+//	兼容不带括号、字母小写以及夹带空格的写法
+//
+// 校验码采用模 11 算法：字母 A-Z 依次取值 10-35，空格取值 36，数字取值本身；
+// 从左到右权重依次为 9、8、7、6、5、4、3、2，仅一位字母时在最左侧补一个空格；
+// 加权和的余数对应校验码 (11 - sum%11) % 11，其中结果 10 用字母 A 表示
+func IsHKIDCard(idcard string) bool {
+	s := normalizeIDCard(idcard)
+	if !hkIDRegex.MatchString(s) {
+		return false
+	}
+
+	// 分离主体（字母 + 6 位数字）与末尾校验码
+	body := s[:len(s)-1]
+	check := s[len(s)-1]
+
+	// 仅一位字母时在最左侧补空格，使主体固定为 8 位
+	if len(body) == 7 {
+		body = " " + body
+	}
+
+	// 权重从左到右依次为 9..2
+	sum := 0
+	for i := 0; i < len(body); i++ {
+		sum += hkCharValue(body[i]) * (9 - i)
+	}
+
+	// 余数对应校验码，其中 10 用字母 A 表示
+	expect := (11 - sum%11) % 11
+	if expect == 10 {
+		return check == 'A'
+	}
+	return check == byte('0'+expect)
+}
+
+// 检查澳门身份证号是否正确
+//
+//	格式为 XNNNNNN(Y) 或旧式 X/NNNNNN/Y：首位为 1、5 或 7（代表取证时代）+ 6 位数字 + 括号内的查核用数码（0-9 或 A）
+//	兼容不带括号、以及使用斜杠分隔的写法
+//
+// 注意：澳门身份证的查核用数码（校验码）算法并未公开标准化，
+// 因此本函数仅校验号码格式，不校验查核用数码本身的正确性
+func IsMacauIDCard(idcard string) bool {
+	return macauIDRegex.MatchString(normalizeIDCard(idcard))
+}
+
 // 判断所给路径文件/文件夹是否存在(返回true是存在)
 func IsFileExist(path string) bool {
 	_, err := os.Stat(path) //os.Stat获取文件信息
